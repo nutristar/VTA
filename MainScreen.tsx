@@ -8,7 +8,9 @@ import {
   Alert,
   TouchableOpacity,
   TextInput,
+  Image,
 } from 'react-native';
+import {launchCamera, ImagePickerResponse} from 'react-native-image-picker';
 import Recorder from './components/Recorder';
 import PermissionsChecker from './components/PermissionsChecker';
 import axios from 'axios';
@@ -20,18 +22,18 @@ interface MainScreenProps {
 }
 
 const MainScreen: React.FC<MainScreenProps> = ({ name }) => {
-  const [audioPath, setAudioPath] = useState<string | null>(null);
   const [transcribedText, setTranscribedText] = useState<string>('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedLanguage, setSelectedLanguage] = useState<'pl' | 'en'>('pl');
 
   const handleStartRecording = () => {
     setTranscribedText('');
+    setPhotoUri(null);
   };
 
   const handleRecordingFinished = (path: string) => {
     console.log('[handleRecordingFinished] Audio path:', path);
-    setAudioPath(path);
     transcribeAudio(path);
   };
 
@@ -66,32 +68,59 @@ const MainScreen: React.FC<MainScreenProps> = ({ name }) => {
   };
 
   const saveTranscription = async () => {
+    setLoading(true);
     const userName = name || (await AsyncStorage.getItem('userName'));
 
     try {
-      const response = await fetch('http://192.168.0.80:5000/save', {
-        method: 'POST',
+      const formData = new FormData();
+      formData.append('text', transcribedText);
+      formData.append('language', selectedLanguage);
+      formData.append('user', userName || 'Anonim');
+      formData.append('file_name', 'audio.m4a');
+
+      if (photoUri) {
+        formData.append('photo', {
+          uri: photoUri,
+          type: 'image/jpeg',
+          name: 'photo.jpg',
+        } as any);
+      }
+
+      const response = await axios.post('http://192.168.0.80:5000/save', formData, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'multipart/form-data',
         },
-        body: JSON.stringify({
-          file_name: 'audio.m4a',
-          text: transcribedText,
-          language: selectedLanguage,
-          user: userName || 'Anonim',
-        }),
       });
 
-      const result = await response.json();
-      if (response.ok) {
-        Alert.alert('Sukces', 'Tekst został zapisany');
+      if (response.status === 200) {
+        Alert.alert('Sukces', 'Dane zostały zapisane');
         setTranscribedText('');
+        setPhotoUri(null);
       } else {
-        throw new Error(result.error || 'Błąd zapisu');
+        throw new Error(response.data.error || 'Błąd zapisu');
       }
     } catch (err: any) {
       Alert.alert('Błąd', 'Nie udało się zapisać: ' + err.message);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleTakePhoto = () => {
+    launchCamera(
+      {mediaType: 'photo', saveToPhotos: true},
+      (response: ImagePickerResponse) => {
+        if (response.didCancel) {
+          console.log('User cancelled image picker');
+        } else if (response.errorCode) {
+          console.log('ImagePicker Error: ', response.errorMessage);
+          Alert.alert('Błąd', 'Nie udało się otworzyć aparatu.');
+        } else if (response.assets && response.assets[0].uri) {
+          setPhotoUri(response.assets[0].uri);
+          Alert.alert('Sukces', 'Zdjęcie gotowe do wysłania.');
+        }
+      },
+    );
   };
 
   const renderLanguageButton = (lang: 'pl' | 'en', label: string) => (
@@ -134,8 +163,13 @@ const MainScreen: React.FC<MainScreenProps> = ({ name }) => {
             onChangeText={setTranscribedText}
             multiline
           />
+          {photoUri && (
+            <Image source={{uri: photoUri}} style={styles.thumbnail} />
+          )}
           <View style={styles.buttonWrapper}>
-            <Button title="Zapisz tekst" onPress={saveTranscription} />
+            <Button title="Zrób zdjęcie" onPress={handleTakePhoto} />
+            <View style={{marginTop: 10}} />
+            <Button title="Zapisz tekst i zdjęcie" onPress={saveTranscription} />
           </View>
         </>
       )}
@@ -183,5 +217,12 @@ const styles = StyleSheet.create({
   },
   buttonWrapper: {
     marginTop: 10,
+  },
+  thumbnail: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginVertical: 10,
   },
 });

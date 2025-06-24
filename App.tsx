@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import {
   createNativeStackNavigator,
-  NativeStackNavigationProp,
 } from '@react-navigation/native-stack';
 import MainScreen from './MainScreen';
 import LoginScreen from './LoginScreen';
@@ -19,11 +18,20 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   const [userName, setUserName] = useState<string>('');
+  const [title, setTitle] = useState('Transkrypcja');
 
   useEffect(() => {
     const loadName = async () => {
-      const saved = await AsyncStorage.getItem('userName');
-      if (saved) setUserName(saved);
+      const firstName = await AsyncStorage.getItem('firstName');
+      const lastName = await AsyncStorage.getItem('lastName');
+      const savedUserName = await AsyncStorage.getItem('userName');
+
+      if (firstName && lastName) {
+        setTitle(`${firstName} ${lastName}`);
+      }
+      if (savedUserName) {
+        setUserName(savedUserName);
+      }
     };
     loadName();
   }, []);
@@ -34,7 +42,7 @@ export default function App() {
         <Stack.Screen
           name="Main"
           options={({ navigation }) => ({
-            title: 'Transkrypcja',
+            title: title,
             headerRight: () => (
               <Text
                 style={{
@@ -49,7 +57,7 @@ export default function App() {
             ),
           })}
         >
-          {(props) => <MainScreen {...props} userName={userName} />}
+          {(props) => <MainScreen {...props} name={userName} />}
         </Stack.Screen>
         <Stack.Screen name="Login" component={LoginScreen} />
       </Stack.Navigator>
