@@ -1,3 +1,12 @@
+этот  коммит stabile_version_1  это бета версия
+все работает миннимально  но стабильно
+не хватает :
+ -   добавления фоточек
+ -  фэйс рекогнишена
+
+
+
+
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
 # Getting Started
