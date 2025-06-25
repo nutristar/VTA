@@ -1,69 +1,91 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import {
-  createNativeStackNavigator,
-} from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MainScreen from './MainScreen';
 import LoginScreen from './LoginScreen';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Text } from 'react-native';
+import RoomsScreen from './components/RoomsScreen'; // 👈 новый экран
+import { Text, View, Pressable } from 'react-native';
 
-// 👇 Типизация навигации
 export type RootStackParamList = {
   Main: undefined;
   Login: undefined;
+  Rooms: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const [userName, setUserName] = useState<string>('');
-  const [title, setTitle] = useState('Transkrypcja');
-
-  useEffect(() => {
-    const loadName = async () => {
-      const firstName = await AsyncStorage.getItem('firstName');
-      const lastName = await AsyncStorage.getItem('lastName');
-      const savedUserName = await AsyncStorage.getItem('userName');
-
-      if (firstName && lastName) {
-        setTitle(`${firstName} ${lastName}`);
-      }
-      if (savedUserName) {
-        setUserName(savedUserName);
-      }
-    };
-    loadName();
-  }, []);
-
   return (
     <NavigationContainer>
       <Stack.Navigator>
         <Stack.Screen
           name="Main"
+          component={MainScreen}
           options={({ navigation }) => ({
-            title: title,
-            headerRight: () => (
-              <Text
-                style={{
-                  marginRight: 15,
-                  color: '#007bff',
-                  fontWeight: 'bold',
-                }}
-                onPress={() => navigation.navigate('Login')}
+            title: '',
+            headerLeft: () => (
+              <Pressable
+                onPress={() => navigation.navigate('Rooms')}
+                style={{ paddingHorizontal: 16 }}
               >
-                Login
-              </Text>
+                <Text style={{ color: '#007bff', fontWeight: 'bold' }}>
+                  Twoje pokoje
+                </Text>
+              </Pressable>
             ),
           })}
-        >
-          {(props) => <MainScreen {...props} name={userName} />}
-        </Stack.Screen>
-        <Stack.Screen name="Login" component={LoginScreen} />
+        />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ title: 'Logowanie' }}
+        />
+        <Stack.Screen
+          name="Rooms"
+          component={RoomsScreen}
+          options={{ title: 'Lista pokoi' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+
+
+
+
+// import React from 'react';
+// import { NavigationContainer } from '@react-navigation/native';
+// import { createNativeStackNavigator } from '@react-navigation/native-stack';
+// import MainScreen from './MainScreen';
+// import LoginScreen from './LoginScreen';
+//
+// export type RootStackParamList = {
+//   Main: undefined;
+//   Login: undefined;
+// };
+//
+// const Stack = createNativeStackNavigator<RootStackParamList>();
+//
+// export default function App() {
+//   return (
+//     <NavigationContainer>
+//       <Stack.Navigator>
+//         <Stack.Screen
+//           name="Main"
+//           component={MainScreen}
+// //           options={{ title: 'Transkrypcja' }}
+//         />
+//         <Stack.Screen
+//           name="Login"
+//           component={LoginScreen}
+//           options={{ title: 'Logowanie' }}
+//         />
+//       </Stack.Navigator>
+//     </NavigationContainer>
+//   );
+// }
+
 
 
 
